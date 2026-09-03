@@ -388,7 +388,7 @@
         }
 
         async function approveDeposit(orderId) {
-            if (!confirm("Are you sure you want to approve this deposit and credit the user's balance?")) return;
+            // بدلاً من استخدام confirm التقليدي، نستخدم النافذة المخصصة أو ننفذ الطلب مباشرة مع تنبيه أنيق
             try {
                 let res = await fetch(`${API_URL}/approve-deposit`, {
                     method: 'POST',
