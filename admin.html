@@ -351,7 +351,7 @@
                     data.accounts.forEach(acc => {
                         let statusBadge = acc.is_sold 
                             ? `<span class="bg-red-500/10 text-red-400 px-2 py-0.5 rounded-md border border-red-500/20 font-medium">Sold ❌</span>`
-                            : `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium">Available ✅</span>`;
+                            : `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-red-500/20 font-medium">Available ✅</span>`;
                     
                         tbody.innerHTML += `
                             <tr class="hover:bg-slate-800/50">
@@ -397,7 +397,7 @@
             let tbody = document.getElementById('usersTableBody');
             tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500">Loading users...</td></tr>`;
             try {
-                let res = await fetch(`${API_URL}/get-all-users?admin_secret=${encodeURIComponent(currentAdminSecret)}`);
+                let res = await fetch(`${API_URL}/get-users-list?admin_secret=${encodeURIComponent(currentAdminSecret)}`);
                 let data = await res.json();
                 
                 if (res.ok && data && data.users) {
@@ -408,35 +408,28 @@
                     }
                     
                     data.users.forEach(u => {
-                        let uId = u.id || 0;
-                        let uName = u.full_name || "Unknown";
-                        let uEmail = u.email || "";
-                        let uBalance = typeof u.balance === 'number' ? u.balance : 0.0;
-                        let uDeposits = typeof u.total_deposits === 'number' ? u.total_deposits : 0;
-                        let isBlocked = Boolean(u.is_blocked);
-
-                        let statusBadge = isBlocked
+                        let statusBadge = u.is_blocked
                             ? `<span class="bg-red-500/10 text-red-400 px-2 py-0.5 rounded-md border border-red-500/20 font-medium">Blocked 🚫</span>`
                             : `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium">Active ✅</span>`;
                         
-                        let blockBtnText = isBlocked ? "Unblock" : "Block";
-                        let blockBtnClass = isBlocked 
+                        let blockBtnText = u.is_blocked ? "Unblock" : "Block";
+                        let blockBtnClass = u.is_blocked 
                             ? "bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border-emerald-500/30" 
                             : "bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border-red-500/30";
 
                         tbody.innerHTML += `
                             <tr class="hover:bg-slate-800/50">
-                                <td class="py-3 font-mono">#${uId}</td>
-                                <td class="py-3 text-white font-bold">${uName}</td>
-                                <td class="py-3 text-slate-300">${uEmail}</td>
-                                <td class="py-3 text-emerald-400 font-bold">$${uBalance.toFixed(2)}</td>
-                                <td class="py-3 text-center font-bold text-blue-400">${uDeposits}</td>
+                                <td class="py-3 font-mono">#${u.id}</td>
+                                <td class="py-3 text-white font-bold">${u.full_name}</td>
+                                <td class="py-3 text-slate-300">${u.email}</td>
+                                <td class="py-3 text-emerald-400 font-bold">$${parseFloat(u.balance).toFixed(2)}</td>
+                                <td class="py-3 text-center font-bold text-blue-400">${u.total_deposits}</td>
                                 <td class="py-3">${statusBadge}</td>
                                 <td class="py-3 text-center space-x-1">
-                                    <button onclick="editBalance(${uId}, '${uName}', ${uBalance})" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded-lg border border-blue-500/30 transition text-xs">
+                                    <button onclick="editBalance(${u.id}, '${u.full_name}', ${u.balance})" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded-lg border border-blue-500/30 transition text-xs">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Balance
                                     </button>
-                                    <button onclick="toggleBlockUser(${uId}, '${uName}')" class="${blockBtnClass} px-2.5 py-1 rounded-lg border transition text-xs">
+                                    <button onclick="toggleBlockUser(${u.id}, '${u.full_name}')" class="${blockBtnClass} px-2.5 py-1 rounded-lg border transition text-xs">
                                         <i class="fa-solid fa-ban"></i> ${blockBtnText}
                                     </button>
                                 </td>
