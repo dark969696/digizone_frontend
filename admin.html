@@ -64,15 +64,15 @@
             <div class="space-y-6">
                 <!-- Add Account Form -->
                 <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-                    <h3 class="font-bold text-sm mb-4 pb-2 border-b border-slate-800 text-slate-200">Add New Account</h3>
+                    <h3 class="font-bold text-sm mb-4 pb-2 border-b border-slate-800 text-slate-200">Add New Accounts (Bulk)</h3>
                     <form id="addForm" class="space-y-4">
                         <div>
                             <label class="block text-xs font-medium text-slate-400 mb-1">Product ID:</label>
                             <input type="number" id="product_id" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Account Data:</label>
-                            <textarea id="account_data" rows="3" placeholder="user@email.com | pass" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" required></textarea>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Account Data (One per line):</label>
+                            <textarea id="account_data" rows="4" placeholder="email1:pass1&#10;email2:pass2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 font-mono" required></textarea>
                         </div>
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20">
                             Add to Inventory
@@ -176,7 +176,7 @@
             <p id="modalMessage" class="text-xs text-slate-300 leading-relaxed"></p>
             
             <div id="modalSingleBtnContainer">
-                <button onclick="closeCustomModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20">
+                <button id="modalOkBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20">
                     OK
                 </button>
             </div>
@@ -203,6 +203,7 @@
             let iconEl = document.getElementById('modalIcon');
             let singleBtnContainer = document.getElementById('modalSingleBtnContainer');
             let confirmBtnsContainer = document.getElementById('modalConfirmBtnsContainer');
+            let okBtn = document.getElementById('modalOkBtn');
 
             msgEl.innerText = message;
 
@@ -231,6 +232,7 @@
             } else {
                 singleBtnContainer.classList.remove('hidden');
                 confirmBtnsContainer.classList.add('hidden');
+                okBtn.onclick = () => closeCustomModal();
             }
 
             modal.classList.remove('hidden');
@@ -265,7 +267,7 @@
                 } else {
                     showModal("Incorrect secret key!", "error");
                     sessionStorage.removeItem("digizone_admin_secret");
-                    document.getElementById('authOverlay').classList.add('hidden');
+                    document.getElementById('authOverlay').classList.remove('hidden');
                     document.getElementById('adminPanel').classList.add('hidden');
                 }
             } catch (err) {
@@ -438,7 +440,7 @@
             let productId = document.getElementById('product_id').value;
             let accountData = document.getElementById('account_data').value;
             let msg = document.getElementById('resultMsg');
-            msg.innerText = "Adding...";
+            msg.innerText = "Adding accounts...";
             msg.className = "mt-3 text-center text-xs font-semibold text-slate-400";
 
             try {
@@ -449,17 +451,17 @@
                 });
                 let data = await response.json();
                 if (response.ok) {
-                    msg.className = "mt-3 text-center text-xs font-semibold text-emerald-400";
-                    msg.innerText = "✅ " + data.message;
+                    showModal(data.message, "success");
+                    msg.innerText = "";
                     document.getElementById('account_data').value = "";
                     loadAccounts();
                 } else {
-                    msg.className = "mt-3 text-center text-xs font-semibold text-red-400";
-                    msg.innerText = "❌ " + (data.detail || "Error");
+                    showModal(data.detail || "Error", "error");
+                    msg.innerText = "";
                 }
             } catch (err) {
-                msg.className = "mt-3 text-center text-xs font-semibold text-red-400";
-                msg.innerText = "❌ Server connection error";
+                showModal("Server connection error", "error");
+                msg.innerText = "";
             }
         });
 
