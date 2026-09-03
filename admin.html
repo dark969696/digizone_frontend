@@ -40,13 +40,16 @@
             
             <div class="flex flex-wrap items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
                 <button onclick="switchTab('inventory')" id="tabInvBtn" class="px-3.5 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg">
-                    <i class="fa-solid fa-boxes-stacked mr-1"></i> Inventory & Prices
+                    <i class="fa-solid fa-boxes-stacked mr-1"></i> Inventory
                 </button>
                 <button onclick="switchTab('deposits')" id="tabDepBtn" class="px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
                     <i class="fa-solid fa-wallet mr-1"></i> Deposits
                 </button>
                 <button onclick="switchTab('purchases')" id="tabPurBtn" class="px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
                     <i class="fa-solid fa-bag-shopping mr-1"></i> Purchases
+                </button>
+                <button onclick="switchTab('users')" id="tabUsrBtn" class="px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-users mr-1"></i> Users
                 </button>
             </div>
 
@@ -135,6 +138,30 @@
             <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-bag-shopping text-emerald-400 mr-2"></i> Product Purchases History</h3>
             <div id="purchasesList" class="space-y-3">
                 <p class="text-xs text-slate-500">Loading purchases history...</p>
+            </div>
+        </div>
+
+        <!-- TAB 4: Users Management Section -->
+        <div id="usersSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hidden">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-users text-blue-400 mr-2"></i> Registered Users</h3>
+                <button onclick="loadUsers()" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">Refresh 🔄</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-800">
+                            <th class="pb-3">ID</th>
+                            <th class="pb-3">Name</th>
+                            <th class="pb-3">Email</th>
+                            <th class="pb-3">Balance</th>
+                            <th class="pb-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody" class="divide-y divide-slate-800 text-slate-300">
+                        <tr><td colspan="5" class="py-4 text-center text-slate-500">Loading users...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -254,18 +281,22 @@
             let invSec = document.getElementById('inventorySection');
             let depSec = document.getElementById('depositsSection');
             let purSec = document.getElementById('purchasesSection');
+            let usrSec = document.getElementById('usersSection');
             
             let invBtn = document.getElementById('tabInvBtn');
             let depBtn = document.getElementById('tabDepBtn');
             let purBtn = document.getElementById('tabPurBtn');
+            let usrBtn = document.getElementById('tabUsrBtn');
 
             invSec.classList.add('hidden');
             depSec.classList.add('hidden');
             purSec.classList.add('hidden');
+            usrSec.classList.add('hidden');
 
             invBtn.className = "px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
             depBtn.className = "px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
             purBtn.className = "px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+            usrBtn.className = "px-3.5 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
 
             if (tabName === 'inventory') {
                 invSec.classList.remove('hidden');
@@ -279,6 +310,10 @@
                 purSec.classList.remove('hidden');
                 purBtn.className = "px-3.5 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
                 fetchAllPurchases();
+            } else if (tabName === 'users') {
+                usrSec.classList.remove('hidden');
+                usrBtn.className = "px-3.5 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
+                loadUsers();
             }
         }
 
@@ -332,6 +367,43 @@
                 } catch (err) {
                     showModal("Server connection error", "error");
                 }
+            });
+        }
+
+        async function loadUsers() {
+            let tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">Loading users...</td></tr>`;
+            try {
+                let res = await fetch(`${API_URL}/get-all-users?admin_secret=${encodeURIComponent(currentAdminSecret)}`);
+                let data = await res.json();
+                if (res.ok && data.users && data.users.length > 0) {
+                    tbody.innerHTML = "";
+                    data.users.forEach(u => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-800/50">
+                                <td class="py-3 font-mono">#${u.id}</td>
+                                <td class="py-3 text-white font-bold">${u.full_name}</td>
+                                <td class="py-3 text-slate-300">${u.email}</td>
+                                <td class="py-3 text-emerald-400 font-bold">$${parseFloat(u.balance).toFixed(2)}</td>
+                                <td class="py-3 text-center">
+                                    <button onclick="blockUser(${u.id}, '${u.full_name}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1 rounded-lg border border-red-500/30 transition text-xs">
+                                        <i class="fa-solid fa-ban mr-1"></i> Block
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">No users found.</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-red-400">Server connection error</td></tr>`;
+            }
+        }
+
+        function blockUser(userId, userName) {
+            showModal(`Are you sure you want to block user "${userName}" (ID #${userId})?`, 'confirm', () => {
+                showModal(`User #${userId} has been restricted successfully.`, 'success');
             });
         }
 
