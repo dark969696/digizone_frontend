@@ -456,15 +456,19 @@
                 fetch(`${API_URL}/update-user-balance`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, new_balance: newAmount, admin_secret: currentAdminSecret })
+                    body: JSON.stringify({ 
+                        user_id: parseInt(userId), 
+                        new_balance: parseFloat(newAmount), 
+                        admin_secret: currentAdminSecret 
+                    })
                 })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        showModal(data.message, "success");
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok && data.status === "success") {
+                        showModal(data.message || "Balance updated successfully!", "success");
                         loadUsers();
                     } else {
-                        showModal(data.detail || "Failed to update balance", "error");
+                        showModal((data && data.detail) || "Failed to update balance", "error");
                     }
                 })
                 .catch(() => showModal("Server connection error", "error"));
