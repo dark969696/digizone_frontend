@@ -155,12 +155,13 @@
                             <th class="pb-3">Name</th>
                             <th class="pb-3">Email</th>
                             <th class="pb-3">Balance</th>
+                            <th class="pb-3 text-center">Total Deposits</th>
                             <th class="pb-3">Status</th>
                             <th class="pb-3 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody" class="divide-y divide-slate-800 text-slate-300">
-                        <tr><td colspan="6" class="py-4 text-center text-slate-500">Loading users...</td></tr>
+                        <tr><td colspan="7" class="py-4 text-center text-slate-500">Loading users...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -375,7 +376,7 @@
 
         async function loadUsers() {
             let tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">Loading users...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500">Loading users...</td></tr>`;
             try {
                 let res = await fetch(`${API_URL}/get-all-users?admin_secret=${encodeURIComponent(currentAdminSecret)}`);
                 let data = await res.json();
@@ -397,21 +398,51 @@
                                 <td class="py-3 text-white font-bold">${u.full_name}</td>
                                 <td class="py-3 text-slate-300">${u.email}</td>
                                 <td class="py-3 text-emerald-400 font-bold">$${parseFloat(u.balance).toFixed(2)}</td>
+                                <td class="py-3 text-center font-bold text-blue-400">${u.total_deposits}</td>
                                 <td class="py-3">${statusBadge}</td>
-                                <td class="py-3 text-center">
-                                    <button onclick="toggleBlockUser(${u.id}, '${u.full_name}')" class="${blockBtnClass} px-3 py-1 rounded-lg border transition text-xs">
-                                        <i class="fa-solid fa-ban mr-1"></i> ${blockBtnText}
+                                <td class="py-3 text-center space-x-1">
+                                    <button onclick="editBalance(${u.id}, '${u.full_name}', ${u.balance})" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded-lg border border-blue-500/30 transition text-xs">
+                                        <i class="fa-solid fa-pen-to-square"></i> Edit Balance
+                                    </button>
+                                    <button onclick="toggleBlockUser(${u.id}, '${u.full_name}')" class="${blockBtnClass} px-2.5 py-1 rounded-lg border transition text-xs">
+                                        <i class="fa-solid fa-ban"></i> ${blockBtnText}
                                     </button>
                                 </td>
                             </tr>
                         `;
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">No users found.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500">No users found.</td></tr>`;
                 }
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-red-400">Server connection error</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-red-400">Server connection error</td></tr>`;
             }
+        }
+
+        function editBalance(userId, userName, currentBalance) {
+            let newAmountStr = prompt(`Enter new balance for "${userName}" (Current: $${currentBalance}):`, currentBalance);
+            if (newAmountStr === null) return;
+            let newAmount = parseFloat(newAmountStr);
+            if (isNaN(newAmount) || newAmount < 0) {
+                showModal("Please enter a valid balance amount!", "error");
+                return;
+            }
+
+            fetch(`${API_URL}/update-user-balance`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, new_balance: newAmount, admin_secret: currentAdminSecret })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    showModal(data.message, "success");
+                    loadUsers();
+                } else {
+                    showModal(data.detail || "Failed to update balance", "error");
+                }
+            })
+            .catch(() => showModal("Server connection error", "error"));
         }
 
         function toggleBlockUser(userId, userName) {
