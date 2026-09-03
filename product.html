@@ -17,7 +17,7 @@
             </div>
             <div class="flex items-center space-x-4">
                 <div id="authArea" class="flex items-center space-x-3 text-xs"></div>
-                <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition">← Back to Store</a>
+                <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition">&larr; Back to Store</a>
             </div>
         </div>
     </header>
@@ -65,12 +65,24 @@
                 <h3 class="font-bold text-emerald-400 text-sm flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> Purchase Successful! Here are your credentials:</h3>
                 <textarea id="deliveredAccounts" readonly rows="4" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-blue-400 font-mono text-xs select-all"></textarea>
                 <button onclick="window.location.href='orders.html'" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-xs font-semibold transition">
-                    View in My Orders History →
+                    View in My Orders History &rarr;
                 </button>
             </div>
 
         </div>
     </main>
+
+    <!-- Custom Center Modal / Toast -->
+    <div id="customModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl transform transition-all">
+            <div id="modalIcon" class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto text-xl"></div>
+            <h3 id="modalTitle" class="font-bold text-white text-lg">Notification</h3>
+            <p id="modalMessage" class="text-xs text-slate-300 leading-relaxed"></p>
+            <button onclick="closeCustomModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20">
+                OK
+            </button>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-auto">
@@ -83,6 +95,34 @@
         let unitPrice = 2.50;
         let maxStock = 0;
 
+        function showModal(message, type = 'success') {
+            let modal = document.getElementById('customModal');
+            let titleEl = document.getElementById('modalTitle');
+            let msgEl = document.getElementById('modalMessage');
+            let iconEl = document.getElementById('modalIcon');
+
+            msgEl.innerText = message;
+
+            if (type === 'success') {
+                titleEl.innerText = "Success";
+                iconEl.className = "w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
+                iconEl.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+            } else {
+                titleEl.innerText = "Notice / Error";
+                iconEl.className = "w-12 h-12 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
+                iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCustomModal() {
+            let modal = document.getElementById('customModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
         async function initProductPage() {
             checkAuth();
             await loadProductDetails();
@@ -90,14 +130,12 @@
 
         async function loadProductDetails() {
             try {
-                // جلب السعر
                 let priceRes = await fetch(`${API_URL}/get-product-price/1`);
                 let priceData = await priceRes.json();
                 if (priceRes.ok) {
                     unitPrice = priceData.price;
                 }
 
-                // جلب المخزون المتاح
                 let stockRes = await fetch(`${API_URL}/check-stock/1`);
                 let stockData = await stockRes.json();
                 let badge = document.getElementById('productStockBadge');
@@ -162,15 +200,13 @@
         async function buyProduct() {
             let userId = localStorage.getItem("digizone_user_id");
             if (!userId) {
-                alert("⚠️ You must log in first to purchase products!");
-                window.location.href = 'login.html';
+                showModal("You must log in first to purchase products!", "error");
+                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
                 return;
             }
 
             let qty = parseInt(document.getElementById('quantityInput').value) || 1;
             let totalAmount = qty * unitPrice;
-
-            if (!confirm(`Are you sure you want to purchase ${qty} item(s) for $${totalAmount.toFixed(2)} from your balance?`)) return;
 
             let btn = document.getElementById('checkoutBtn');
             btn.disabled = true;
@@ -190,25 +226,22 @@
                 let data = await res.json();
 
                 if (res.ok) {
-                    // تحديث الرصيد المحلي
                     let currentBalance = parseFloat(localStorage.getItem("digizone_user_balance")) || 0.00;
                     localStorage.setItem("digizone_user_balance", currentBalance - totalAmount);
 
-                    // إخفاء زر الشراء وإظهار صندوق تسليم الحسابات
                     btn.classList.add('hidden');
                     let box = document.getElementById('resultBox');
                     box.classList.remove('hidden');
                     document.getElementById('deliveredAccounts').value = data.account_details;
                     
-                    // تحديث واجهة المخزون
                     loadProductDetails();
                 } else {
-                    alert("❌ " + (data.detail || "Purchase failed"));
+                    showModal(data.detail || "Purchase failed", "error");
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Complete Purchase & Get Accounts`;
                 }
             } catch (err) {
-                alert("❌ Server connection error!");
+                showModal("Server connection error!", "error");
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Complete Purchase & Get Accounts`;
             }
