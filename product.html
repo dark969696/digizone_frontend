@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>digizone - My Orders & History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl font-black tracking-wider text-white bg-blue-600 px-3 py-1 rounded-lg">Accs<span class="text-blue-300">Zone</span></span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="authArea" class="flex items-center space-x-3"></div>
+                <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition">← Back to Store</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
+        <!-- Top Header & Tab Switcher -->
+        <div class="flex flex-col md:flex-row justify-between items-center bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl gap-4">
+            <h1 class="text-xl font-bold text-white"><i class="fa-solid fa-box-archive text-blue-500 mr-2"></i> My History</h1>
+            
+            <div class="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                <button id="tabPurchasesBtn" onclick="switchTab('purchases')" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg">
+                    <i class="fa-solid fa-bag-shopping mr-1.5"></i> Purchased Accounts
+                </button>
+                <button id="tabDepositsBtn" onclick="switchTab('deposits')" class="px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-wallet mr-1.5"></i> Deposit Requests
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 1: Product Purchases -->
+        <div id="purchasesSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-bag-shopping text-emerald-400 mr-2"></i> Purchased Accounts</h3>
+            <div id="ordersList" class="space-y-4">
+                <p class="text-xs text-slate-500">Loading your purchases...</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Deposit Requests -->
+        <div id="depositsSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hidden">
+            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-wallet text-amber-400 mr-2"></i> Deposit Requests</h3>
+            <div id="userDepositsList" class="space-y-4">
+                <p class="text-xs text-slate-500">Loading deposit requests...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-auto">
+        <p>&copy; 2026 digizone System. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const API_URL = "https://digizone-kb46.onrender.com/";
+        let globalUserId = null;
+
+        function switchTab(tabName) {
+            let purchasesSec = document.getElementById('purchasesSection');
+            let depositsSec = document.getElementById('depositsSection');
+            let purchasesBtn = document.getElementById('tabPurchasesBtn');
+            let depositsBtn = document.getElementById('tabDepositsBtn');
+
+            if (tabName === 'purchases') {
+                purchasesSec.classList.remove('hidden');
+                depositsSec.classList.add('hidden');
+                
+                purchasesBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
+                depositsBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                fetchUserOrders(globalUserId);
+            } else {
+                depositsSec.classList.remove('hidden');
+                purchasesSec.classList.add('hidden');
+                
+                depositsBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
+                purchasesBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                fetchUserDeposits(globalUserId);
+            }
+        }
+
+        async function checkAuth() {
+            let authArea = document.getElementById('authArea');
+            let savedUser = localStorage.getItem("digizone_user");
+            let userId = localStorage.getItem("digizone_user_id");
+
+            if (!userId) {
+                alert("⚠️ You must log in to view your purchases!");
+                window.location.href = 'login.html';
+                return;
+            }
+
+            globalUserId = parseInt(userId);
+
+            let currentBalance = 0.00;
+            try {
+                let res = await fetch(`${API_URL}/get-user-balance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: globalUserId })
+                });
+                let data = await res.json();
+                if (res.ok) {
+                    currentBalance = data.balance;
+                }
+            } catch (e) {
+                currentBalance = parseFloat(localStorage.getItem("digizone_user_balance")) || 0.00;
+            }
+
+            authArea.innerHTML = `
+                <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+                    <span class="text-slate-200">${savedUser}</span>
+                    <span class="text-emerald-400 font-bold">$${currentBalance.toFixed(2)}</span>
+                    <a href="orders.html" class="bg-blue-600 text-white px-2 py-1 rounded">My Orders</a>
+                </div>
+            `;
+
+            fetchUserOrders(globalUserId);
+        }
+
+        async function fetchUserOrders(userId) {
+            let container = document.getElementById('ordersList');
+            try {
+                let res = await fetch(`${API_URL}/get-user-orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                let data = await res.json();
+
+                if (res.ok && data.orders.length > 0) {
+                    container.innerHTML = data.orders.map(o => {
+                        let lines = o.account_details ? o.account_details.split("\n") : [];
+                        let tableRows = "";
+                        let itemType = o.item_name || "Grindr Account";
+
+                        lines.forEach(line => {
+                            if (!line.trim()) return;
+                            
+                            let parts;
+                            if (line.includes(":")) {
+                                parts = line.split(":");
+                            } else if (line.includes("|")) {
+                                parts = line.split("|");
+                            } else {
+                                parts = line.trim().split(/\s+/);
+                            }
+
+                            let email = (parts[0] || "N/A").trim();
+                            let password = (parts.slice(1).join(":") || "N/A").trim();
+                            if (!password) password = "N/A";
+
+                            tableRows += `
+                                <tr class="hover:bg-slate-900/50 transition-colors">
+                                    <td class="py-2.5 px-3 text-blue-400 font-semibold text-xs">${itemType}</td>
+                                    <td class="py-2.5 px-3 text-slate-200 font-mono select-all text-xs">${email}</td>
+                                    <td class="py-2.5 px-3 text-slate-400 font-mono select-all text-xs">${password}</td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <button onclick="copyToClipboard('${email}:${password}', this)" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs rounded transition border border-emerald-500/30">
+                                            <i class="fa-solid fa-copy mr-1"></i> Copy
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        return `
+                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                                <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
+                                    <span class="text-slate-400">Order ID: <strong class="text-white">#${o.order_id}</strong></span>
+                                    <span class="text-emerald-400 font-bold">Total: $${o.total_amount}</span>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse text-xs text-slate-300">
+                                        <thead>
+                                            <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/40">
+                                                <th class="py-2 px-3 font-medium">Account Type</th>
+                                                <th class="py-2 px-3 font-medium">Email</th>
+                                                <th class="py-2 px-3 font-medium">Password</th>
+                                                <th class="py-2 px-3 font-medium text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-800/50">
+                                            ${tableRows || `<tr><td colspan="4" class="text-center py-3 text-slate-500">No credentials found</td></tr>`}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No account purchases found yet.</p>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-500 text-center py-6">Error loading orders.</p>`;
+            }
+        }
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                let originalHTML = btn.innerHTML;
+                btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Copied!`;
+                btn.classList.add("bg-emerald-600", "text-white");
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove("bg-emerald-600", "text-white");
+                }, 2000);
+            });
+        }
+
+        async function fetchUserDeposits(userId) {
+            let container = document.getElementById('userDepositsList');
+            try {
+                let res = await fetch(`${API_URL}/get-user-deposits`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                let data = await res.json();
+
+                if (res.ok && data.deposits.length > 0) {
+                    container.innerHTML = data.deposits.map(d => `
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                            <div class="space-y-1">
+                                <span class="text-slate-400">Deposit ID: <strong class="text-white">#${d.order_id}</strong></span>
+                                <p class="text-emerald-400 font-bold text-sm">Amount: $${d.amount}</p>
+                                <p class="text-slate-400 font-mono">TXID: ${d.txid}</p>
+                            </div>
+                            <div>
+                                <span class="px-3 py-1 rounded-full text-xs font-bold ${d.payment_status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+                                    ${d.payment_status.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No deposit requests found yet.</p>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-500 text-center py-6">Error loading deposits.</p>`;
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

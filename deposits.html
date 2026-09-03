@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>digizone - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-6">
+    <div class="max-w-5xl mx-auto space-y-6">
+        <!-- Top Header & Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl gap-4">
+            <h1 class="text-xl font-bold text-white"><i class="fa-solid fa-shield-halved text-blue-500 mr-2"></i> Admin Management Dashboard</h1>
+            
+            <!-- Tab Switcher Buttons -->
+            <div class="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                <button id="tabDepositsBtn" onclick="switchTab('deposits')" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg">
+                    <i class="fa-solid fa-wallet mr-1.5"></i> Deposit Requests
+                </button>
+                <button id="tabPurchasesBtn" onclick="switchTab('purchases')" class="px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-bag-shopping mr-1.5"></i> Account Purchases
+                </button>
+            </div>
+
+            <a href="index.html" class="text-xs bg-slate-800 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 transition hover:bg-slate-700">← Back to Store</a>
+        </div>
+
+        <!-- Section 1: Pending Deposits -->
+        <div id="depositsSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-wallet text-amber-400 mr-2"></i> Pending Deposit Requests</h3>
+            <div id="depositsList" class="space-y-3">
+                <p class="text-xs text-slate-500">Loading pending deposits...</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Product Purchases -->
+        <div id="purchasesSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hidden">
+            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-bag-shopping text-emerald-400 mr-2"></i> Product Purchases History</h3>
+            <div id="purchasesList" class="space-y-3">
+                <p class="text-xs text-slate-500">Loading purchases history...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://digizone-kb46.onrender.com/";
+        const adminSecret = "Dh92880@#&";
+
+        function switchTab(tabName) {
+            let depositsSec = document.getElementById('depositsSection');
+            let purchasesSec = document.getElementById('purchasesSection');
+            let depositsBtn = document.getElementById('tabDepositsBtn');
+            let purchasesBtn = document.getElementById('tabPurchasesBtn');
+
+            if (tabName === 'deposits') {
+                depositsSec.classList.remove('hidden');
+                purchasesSec.classList.add('hidden');
+                
+                depositsBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
+                purchasesBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                fetchPendingDeposits();
+            } else {
+                purchasesSec.classList.remove('hidden');
+                depositsSec.classList.add('hidden');
+                
+                purchasesBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
+                depositsBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                fetchAllPurchases();
+            }
+        }
+
+        async function fetchPendingDeposits() {
+            let container = document.getElementById('depositsList');
+            try {
+                let res = await fetch(`${API_URL}/get-pending-deposits?admin_secret=${adminSecret}`);
+                let data = await res.json();
+                
+                if (res.ok && data.deposits.length > 0) {
+                    container.innerHTML = data.deposits.map(d => `
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                            <div class="space-y-1">
+                                <p class="text-white font-bold">Customer: ${d.customer_name} (${d.customer_email})</p>
+                                <p class="text-emerald-400 font-bold text-sm">Amount: $${d.amount}</p>
+                                <p class="text-slate-400 font-mono">TXID: ${d.txid}</p>
+                            </div>
+                            <button onclick="approveDeposit(${d.order_id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow-lg">
+                                Approve & Credit
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<p class="text-xs text-slate-500">No pending deposits found.</p>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-500">Error loading deposits.</p>`;
+            }
+        }
+
+        async function fetchAllPurchases() {
+            let container = document.getElementById('purchasesList');
+            try {
+                let res = await fetch(`${API_URL}/get-all-purchases?admin_secret=${adminSecret}`);
+                let data = await res.json();
+                
+                if (res.ok && data.purchases.length > 0) {
+                    container.innerHTML = data.purchases.map(p => `
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span class="text-white font-bold">Order #${p.order_id} — ${p.customer_name} (${p.customer_email})</span>
+                                <span class="text-emerald-400 font-bold">Paid: $${p.total_amount}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block mb-1">Delivered Account Details:</span>
+                                <textarea readonly class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-blue-400 font-mono" rows="2">${p.account_details}</textarea>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<p class="text-xs text-slate-500">No product purchases recorded yet.</p>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-500">Error loading purchases.</p>`;
+            }
+        }
+
+        async function approveDeposit(orderId) {
+            if (!confirm("Are you sure you want to approve this deposit and credit the user's balance?")) return;
+
+            try {
+                let res = await fetch(`${API_URL}/approve-deposit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderId, admin_secret: adminSecret })
+                });
+                let data = await res.json();
+                if (res.ok) {
+                    alert("✅ " + data.message);
+                    fetchPendingDeposits();
+                } else {
+                    let errorMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || "Approval failed");
+                    alert("❌ Error: " + errorMsg);
+                }
+            } catch (err) {
+                alert("❌ Server connection error");
+            }
+        }
+
+        fetchPendingDeposits();
+    </script>
+</body>
+</html>
