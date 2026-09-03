@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digizone - Grindr Accounts Marketplace</title>
+    <title>DigiZone - Grindr Accounts Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -12,7 +12,7 @@
     <!-- Top Notice Bar -->
     <div class="bg-blue-600/10 border-b border-blue-500/20 text-blue-300 px-4 py-2 text-center text-xs sm:text-sm font-medium flex items-center justify-center gap-2 backdrop-blur-md">
         <span class="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">Beta</span>
-        <span>🚀 digizone is currently in its beta launch phase and under active testing. Thank you for your trust and support!</span>
+        <span>🚀 DigiZone is currently in its beta launch phase and under active testing. Thank you for your trust and support!</span>
     </div>
 
     <!-- Header / Navbar -->
@@ -116,27 +116,136 @@
         </div>
     </div>
 
+    <!-- Custom Center Modal / Toast -->
+    <div id="customModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl transform transition-all">
+            <div id="modalIcon" class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto text-xl"></div>
+            <h3 id="modalTitle" class="font-bold text-white text-lg">Notification</h3>
+            <p id="modalMessage" class="text-xs text-slate-300 leading-relaxed"></p>
+            <button onclick="closeCustomModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20">
+                OK
+            </button>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-auto">
-        <p>&copy; 2026 digizone System. All rights reserved.</p>
+        <p>&copy; 2026 DigiZone System. All rights reserved.</p>
     </footer>
 
     <!-- Scripts -->
     <script>
         const API_URL = "https://digizone-kb46.onrender.com";
+        const CACHE_DURATION = 2 * 60 * 1000;
+
+        function showModal(message, type = 'success') {
+            let modal = document.getElementById('customModal');
+            let titleEl = document.getElementById('modalTitle');
+            let msgEl = document.getElementById('modalMessage');
+            let iconEl = document.getElementById('modalIcon');
+
+            msgEl.innerText = message;
+
+            if (type === 'success') {
+                titleEl.innerText = "Success";
+                iconEl.className = "w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
+                iconEl.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+            } else {
+                titleEl.innerText = "Notice / Error";
+                iconEl.className = "w-12 h-12 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
+                iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCustomModal() {
+            let modal = document.getElementById('customModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
 
         async function loadProductPrice() {
+            let cachedPrice = localStorage.getItem("digizone_cached_price");
+            let cachedTime = localStorage.getItem("digizone_price_time");
+            let now = new Date().getTime();
+
+            if (cachedPrice && cachedTime && (now - cachedTime < CACHE_DURATION)) {
+                document.getElementById('productPrice').innerText = `$${parseFloat(cachedPrice).toFixed(2)}`;
+                return;
+            }
+
             try {
                 let res = await fetch(`${API_URL}/get-product-price/1`);
                 let data = await res.json();
                 if (res.ok) {
-                    document.getElementById('productPrice').innerText = `$${data.price.toFixed(2)}`;
+                    let price = data.price;
+                    document.getElementById('productPrice').innerText = `$${price.toFixed(2)}`;
+                    localStorage.setItem("digizone_cached_price", price);
+                    localStorage.setItem("digizone_price_time", now);
                 } else {
                     document.getElementById('productPrice').innerText = `$2.50`;
                 }
             } catch (err) {
                 console.error("Failed to fetch price", err);
-                document.getElementById('productPrice').innerText = `$2.50`;
+                if (cachedPrice) {
+                    document.getElementById('productPrice').innerText = `$${parseFloat(cachedPrice).toFixed(2)}`;
+                } else {
+                    document.getElementById('productPrice').innerText = `$2.50`;
+                }
+            }
+        }
+
+        async function checkHomeStock() {
+            let badge = document.getElementById('homeStockBadge');
+            let btn = document.getElementById('homeBuyBtn');
+
+            let cachedStock = localStorage.getItem("digizone_cached_stock");
+            let cachedStockTime = localStorage.getItem("digizone_stock_time");
+            let now = new Date().getTime();
+
+            function updateStockUI(stock) {
+                if (stock > 0) {
+                    badge.innerText = `In Stock (${stock})`;
+                    badge.className = "text-xs bg-emerald-500/10 text-emerald-400 font-semibold px-2.5 py-1 rounded-md";
+                    btn.disabled = false;
+                    btn.innerText = "Buy Now";
+                    btn.className = "bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-xl text-sm transition shadow-lg shadow-blue-600/20";
+                } else {
+                    badge.innerText = "Out of Stock ❌";
+                    badge.className = "text-xs bg-red-500/10 text-red-400 font-semibold px-2.5 py-1 rounded-md";
+                    btn.disabled = true;
+                    btn.innerText = "Sold Out";
+                    btn.className = "bg-slate-800 text-slate-500 font-medium px-5 py-2 rounded-xl text-sm cursor-not-allowed";
+                }
+            }
+
+            if (cachedStock !== null && cachedStockTime && (now - cachedStockTime < CACHE_DURATION)) {
+                updateStockUI(parseInt(cachedStock));
+                return;
+            }
+
+            try {
+                let res = await fetch(`${API_URL}/check-stock/1`);
+                let data = await res.json();
+
+                if (res.ok) {
+                    let stock = data.available_stock;
+                    updateStockUI(stock);
+                    localStorage.setItem("digizone_cached_stock", stock);
+                    localStorage.setItem("digizone_stock_time", now);
+                } else {
+                    badge.innerText = "Status Unknown";
+                    badge.className = "text-xs bg-amber-500/10 text-amber-400 font-semibold px-2.5 py-1 rounded-md";
+                }
+            } catch (err) {
+                if (cachedStock !== null) {
+                    updateStockUI(parseInt(cachedStock));
+                } else {
+                    badge.innerText = "Status Unknown";
+                    badge.className = "text-xs bg-amber-500/10 text-amber-400 font-semibold px-2.5 py-1 rounded-md";
+                }
             }
         }
 
@@ -185,14 +294,16 @@
             localStorage.removeItem("digizone_user");
             localStorage.removeItem("digizone_user_id");
             localStorage.removeItem("digizone_user_balance");
+            localStorage.removeItem("digizone_cached_stock");
+            localStorage.removeItem("digizone_cached_price");
             checkAuth();
         }
 
         function openDepositModal() {
             let userId = localStorage.getItem("digizone_user_id");
             if (!userId) {
-                alert("⚠️ You must log in first to deposit funds!");
-                window.location.href = 'login.html';
+                showModal("You must log in first to deposit funds!", "error");
+                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
                 return;
             }
             document.getElementById('depositModal').classList.remove('hidden');
@@ -210,7 +321,7 @@
             let txid = document.getElementById('depositTxid').value.trim();
 
             if (!txid || isNaN(amount) || amount <= 0) {
-                alert("⚠️ Please enter a valid amount and transaction hash (TXID)!");
+                showModal("Please enter a valid amount and transaction hash (TXID)!", "error");
                 return;
             }
 
@@ -222,41 +333,14 @@
                 });
                 let data = await res.json();
                 if (res.ok) {
-                    alert("✅ " + (data.message || "Deposit request sent successfully"));
+                    showModal(data.message || "Deposit request sent successfully", "success");
                     closeDepositModal();
                 } else {
                     let errorMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || "Deposit failed");
-                    alert("❌ Error: " + errorMsg);
+                    showModal(errorMsg, "error");
                 }
             } catch (err) {
-                alert("❌ Server connection error");
-            }
-        }
-
-        async function checkHomeStock() {
-            let badge = document.getElementById('homeStockBadge');
-            let btn = document.getElementById('homeBuyBtn');
-
-            try {
-                let res = await fetch(`${API_URL}/check-stock/1`);
-                let data = await res.json();
-
-                if (res.ok && data.available_stock > 0) {
-                    badge.innerText = `In Stock (${data.available_stock})`;
-                    badge.className = "text-xs bg-emerald-500/10 text-emerald-400 font-semibold px-2.5 py-1 rounded-md";
-                    btn.disabled = false;
-                    btn.innerText = "Buy Now";
-                    btn.className = "bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-xl text-sm transition shadow-lg shadow-blue-600/20";
-                } else {
-                    badge.innerText = "Out of Stock ❌";
-                    badge.className = "text-xs bg-red-500/10 text-red-400 font-semibold px-2.5 py-1 rounded-md";
-                    btn.disabled = true;
-                    btn.innerText = "Sold Out";
-                    btn.className = "bg-slate-800 text-slate-500 font-medium px-5 py-2 rounded-xl text-sm cursor-not-allowed";
-                }
-            } catch (err) {
-                badge.innerText = "Status Unknown";
-                badge.className = "text-xs bg-amber-500/10 text-amber-400 font-semibold px-2.5 py-1 rounded-md";
+                showModal("Server connection error", "error");
             }
         }
 
