@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digizone - My Orders & History</title>
+    <title>DigiZone - Product Checkout</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -16,42 +16,59 @@
                 <span class="text-2xl font-black tracking-wider text-white bg-blue-600 px-3 py-1 rounded-lg">Accs<span class="text-blue-300">Zone</span></span>
             </div>
             <div class="flex items-center space-x-4">
-                <div id="authArea" class="flex items-center space-x-3"></div>
+                <div id="authArea" class="flex items-center space-x-3 text-xs"></div>
                 <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition">← Back to Store</a>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
-        <!-- Top Header & Tab Switcher -->
-        <div class="flex flex-col md:flex-row justify-between items-center bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl gap-4">
-            <h1 class="text-xl font-bold text-white"><i class="fa-solid fa-box-archive text-blue-500 mr-2"></i> My History</h1>
+    <main class="max-w-3xl mx-auto px-4 py-10 flex-grow w-full space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6">
             
-            <div class="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                <button id="tabPurchasesBtn" onclick="switchTab('purchases')" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg">
-                    <i class="fa-solid fa-bag-shopping mr-1.5"></i> Purchased Accounts
-                </button>
-                <button id="tabDepositsBtn" onclick="switchTab('deposits')" class="px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
-                    <i class="fa-solid fa-wallet mr-1.5"></i> Deposit Requests
-                </button>
+            <!-- Product Header Info -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-800 gap-4">
+                <div>
+                    <span id="productStockBadge" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 mb-2 inline-block">Checking stock...</span>
+                    <h1 class="text-xl md:text-2xl font-bold text-white">Verified Grindr Account | Aged & Safe</h1>
+                    <p class="text-xs text-slate-400 mt-1">Instant delivery automatically processed from our internal stock.</p>
+                </div>
+                <div class="text-left md:text-right">
+                    <span class="text-xs text-slate-500 block">Unit Price</span>
+                    <span id="unitPriceText" class="text-emerald-400 font-bold text-lg">$0.00</span>
+                </div>
             </div>
-        </div>
 
-        <!-- Section 1: Product Purchases -->
-        <div id="purchasesSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-bag-shopping text-emerald-400 mr-2"></i> Purchased Accounts</h3>
-            <div id="ordersList" class="space-y-4">
-                <p class="text-xs text-slate-500">Loading your purchases...</p>
+            <!-- Quantity Selector & Total -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-slate-950 p-5 rounded-xl border border-slate-800">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2">Select Quantity:</label>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="updateQty(-1)" class="bg-slate-800 hover:bg-slate-700 text-white w-10 h-10 rounded-xl font-bold transition flex items-center justify-center">-</button>
+                        <input type="number" id="quantityInput" value="1" min="1" max="10" onchange="calculateTotal()" class="w-16 bg-slate-900 border border-slate-800 rounded-xl py-2 text-center text-white text-sm focus:outline-none focus:border-blue-500">
+                        <button onclick="updateQty(1)" class="bg-slate-800 hover:bg-slate-700 text-white w-10 h-10 rounded-xl font-bold transition flex items-center justify-center">+</button>
+                    </div>
+                </div>
+                <div class="flex flex-col md:items-end justify-center">
+                    <span class="text-xs text-slate-400 mb-1">Total Amount:</span>
+                    <span id="totalPriceText" class="text-2xl font-black text-emerald-400">$0.00</span>
+                </div>
             </div>
-        </div>
 
-        <!-- Section 2: Deposit Requests -->
-        <div id="depositsSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hidden">
-            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-wallet text-amber-400 mr-2"></i> Deposit Requests</h3>
-            <div id="userDepositsList" class="space-y-4">
-                <p class="text-xs text-slate-500">Loading deposit requests...</p>
+            <!-- Checkout Action Button -->
+            <button id="checkoutBtn" onclick="buyProduct()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cart-shopping"></i> Complete Purchase & Get Accounts
+            </button>
+
+            <!-- Success/Delivery Result Box (Hidden Initially) -->
+            <div id="resultBox" class="hidden bg-slate-950 border border-emerald-500/30 rounded-xl p-5 space-y-3">
+                <h3 class="font-bold text-emerald-400 text-sm flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> Purchase Successful! Here are your credentials:</h3>
+                <textarea id="deliveredAccounts" readonly rows="4" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-blue-400 font-mono text-xs select-all"></textarea>
+                <button onclick="window.location.href='orders.html'" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-xs font-semibold transition">
+                    View in My Orders History →
+                </button>
             </div>
+
         </div>
     </main>
 
@@ -60,31 +77,68 @@
         <p>&copy; 2026 digizone System. All rights reserved.</p>
     </footer>
 
+    <!-- Script Logic -->
     <script>
         const API_URL = "https://digizone-kb46.onrender.com";
-        let globalUserId = null;
+        let unitPrice = 2.50;
+        let maxStock = 0;
 
-        function switchTab(tabName) {
-            let purchasesSec = document.getElementById('purchasesSection');
-            let depositsSec = document.getElementById('depositsSection');
-            let purchasesBtn = document.getElementById('tabPurchasesBtn');
-            let depositsBtn = document.getElementById('tabDepositsBtn');
+        async function initProductPage() {
+            checkAuth();
+            await loadProductDetails();
+        }
 
-            if (tabName === 'purchases') {
-                purchasesSec.classList.remove('hidden');
-                depositsSec.classList.add('hidden');
-                
-                purchasesBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
-                depositsBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
-                fetchUserOrders(globalUserId);
-            } else {
-                depositsSec.classList.remove('hidden');
-                purchasesSec.classList.add('hidden');
-                
-                depositsBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-lg";
-                purchasesBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
-                fetchUserDeposits(globalUserId);
+        async function loadProductDetails() {
+            try {
+                // جلب السعر
+                let priceRes = await fetch(`${API_URL}/get-product-price/1`);
+                let priceData = await priceRes.json();
+                if (priceRes.ok) {
+                    unitPrice = priceData.price;
+                }
+
+                // جلب المخزون المتاح
+                let stockRes = await fetch(`${API_URL}/check-stock/1`);
+                let stockData = await stockRes.json();
+                let badge = document.getElementById('productStockBadge');
+                let btn = document.getElementById('checkoutBtn');
+
+                if (stockRes.ok) {
+                    maxStock = stockData.available_stock;
+                    if (maxStock > 0) {
+                        badge.innerText = `In Stock (${maxStock} available)`;
+                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 mb-2 inline-block";
+                        btn.disabled = false;
+                    } else {
+                        badge.innerText = "Out of Stock ❌";
+                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 mb-2 inline-block";
+                        btn.disabled = true;
+                        btn.innerText = "Sold Out";
+                        btn.className = "w-full bg-slate-800 text-slate-500 font-bold py-3.5 rounded-xl text-sm cursor-not-allowed";
+                    }
+                }
+
+                document.getElementById('unitPriceText').innerText = `$${unitPrice.toFixed(2)}`;
+                calculateTotal();
+            } catch (err) {
+                console.error("Error loading product data", err);
             }
+        }
+
+        function updateQty(change) {
+            let input = document.getElementById('quantityInput');
+            let current = parseInt(input.value) || 1;
+            let newVal = current + change;
+            if (newVal < 1) newVal = 1;
+            if (maxStock > 0 && newVal > maxStock) newVal = maxStock;
+            input.value = newVal;
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let qty = parseInt(document.getElementById('quantityInput').value) || 1;
+            let total = qty * unitPrice;
+            document.getElementById('totalPriceText').innerText = `$${total.toFixed(2)}`;
         }
 
         async function checkAuth() {
@@ -92,164 +146,75 @@
             let savedUser = localStorage.getItem("digizone_user");
             let userId = localStorage.getItem("digizone_user_id");
 
+            if (savedUser && userId) {
+                let currentBalance = parseFloat(localStorage.getItem("digizone_user_balance")) || 0.00;
+                authArea.innerHTML = `
+                    <span class="text-slate-300">${savedUser}</span>
+                    <span class="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20">$${currentBalance.toFixed(2)}</span>
+                `;
+            } else {
+                authArea.innerHTML = `
+                    <a href="login.html" class="text-blue-400 hover:underline">Login to Buy</a>
+                `;
+            }
+        }
+
+        async function buyProduct() {
+            let userId = localStorage.getItem("digizone_user_id");
             if (!userId) {
-                alert("⚠️ You must log in to view your purchases!");
+                alert("⚠️ You must log in first to purchase products!");
                 window.location.href = 'login.html';
                 return;
             }
 
-            globalUserId = parseInt(userId);
+            let qty = parseInt(document.getElementById('quantityInput').value) || 1;
+            let totalAmount = qty * unitPrice;
 
-            let currentBalance = 0.00;
+            if (!confirm(`Are you sure you want to purchase ${qty} item(s) for $${totalAmount.toFixed(2)} from your balance?`)) return;
+
+            let btn = document.getElementById('checkoutBtn');
+            btn.disabled = true;
+            btn.innerText = "Processing Purchase...";
+
             try {
-                let res = await fetch(`${API_URL}/get-user-balance`, {
+                let res = await fetch(`${API_URL}/buy-with-balance`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: globalUserId })
+                    body: JSON.stringify({
+                        user_id: parseInt(userId),
+                        product_id: 1,
+                        amount: totalAmount,
+                        quantity: qty
+                    })
                 });
                 let data = await res.json();
+
                 if (res.ok) {
-                    currentBalance = data.balance;
-                }
-            } catch (e) {
-                currentBalance = parseFloat(localStorage.getItem("digizone_user_balance")) || 0.00;
-            }
+                    // تحديث الرصيد المحلي
+                    let currentBalance = parseFloat(localStorage.getItem("digizone_user_balance")) || 0.00;
+                    localStorage.setItem("digizone_user_balance", currentBalance - totalAmount);
 
-            authArea.innerHTML = `
-                <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
-                    <span class="text-slate-200">${savedUser}</span>
-                    <span class="text-emerald-400 font-bold">$${currentBalance.toFixed(2)}</span>
-                    <a href="orders.html" class="bg-blue-600 text-white px-2 py-1 rounded">My Orders</a>
-                </div>
-            `;
-
-            fetchUserOrders(globalUserId);
-        }
-
-        async function fetchUserOrders(userId) {
-            let container = document.getElementById('ordersList');
-            try {
-                let res = await fetch(`${API_URL}/get-user-orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId })
-                });
-                let data = await res.json();
-
-                if (res.ok && data.orders.length > 0) {
-                    container.innerHTML = data.orders.map(o => {
-                        let lines = o.account_details ? o.account_details.split("\n") : [];
-                        let tableRows = "";
-                        let itemType = o.item_name || "Grindr Account";
-
-                        lines.forEach(line => {
-                            if (!line.trim()) return;
-                            
-                            let parts;
-                            if (line.includes(":")) {
-                                parts = line.split(":");
-                            } else if (line.includes("|")) {
-                                parts = line.split("|");
-                            } else {
-                                parts = line.trim().split(/\s+/);
-                            }
-
-                            let email = (parts[0] || "N/A").trim();
-                            let password = (parts.slice(1).join(":") || "N/A").trim();
-                            if (!password) password = "N/A";
-
-                            tableRows += `
-                                <tr class="hover:bg-slate-900/50 transition-colors">
-                                    <td class="py-2.5 px-3 text-blue-400 font-semibold text-xs">${itemType}</td>
-                                    <td class="py-2.5 px-3 text-slate-200 font-mono select-all text-xs">${email}</td>
-                                    <td class="py-2.5 px-3 text-slate-400 font-mono select-all text-xs">${password}</td>
-                                    <td class="py-2.5 px-3 text-center">
-                                        <button onclick="copyToClipboard('${email}:${password}', this)" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs rounded transition border border-emerald-500/30">
-                                            <i class="fa-solid fa-copy mr-1"></i> Copy
-                                        </button>
-                                    </td>
-                                </tr>
-                            `;
-                        });
-
-                        return `
-                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                                <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                                    <span class="text-slate-400">Order ID: <strong class="text-white">#${o.order_id}</strong></span>
-                                    <span class="text-emerald-400 font-bold">Total: $${o.total_amount}</span>
-                                </div>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-left border-collapse text-xs text-slate-300">
-                                        <thead>
-                                            <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/40">
-                                                <th class="py-2 px-3 font-medium">Account Type</th>
-                                                <th class="py-2 px-3 font-medium">Email</th>
-                                                <th class="py-2 px-3 font-medium">Password</th>
-                                                <th class="py-2 px-3 font-medium text-center">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-800/50">
-                                            ${tableRows || `<tr><td colspan="4" class="text-center py-3 text-slate-500">No credentials found</td></tr>`}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    // إخفاء زر الشراء وإظهار صندوق تسليم الحسابات
+                    btn.classList.add('hidden');
+                    let box = document.getElementById('resultBox');
+                    box.classList.remove('hidden');
+                    document.getElementById('deliveredAccounts').value = data.account_details;
+                    
+                    // تحديث واجهة المخزون
+                    loadProductDetails();
                 } else {
-                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No account purchases found yet.</p>`;
+                    alert("❌ " + (data.detail || "Purchase failed"));
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Complete Purchase & Get Accounts`;
                 }
             } catch (err) {
-                container.innerHTML = `<p class="text-xs text-red-500 text-center py-6">Error loading orders.</p>`;
+                alert("❌ Server connection error!");
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Complete Purchase & Get Accounts`;
             }
         }
 
-        function copyToClipboard(text, btn) {
-            navigator.clipboard.writeText(text).then(() => {
-                let originalHTML = btn.innerHTML;
-                btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Copied!`;
-                btn.classList.add("bg-emerald-600", "text-white");
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    btn.classList.remove("bg-emerald-600", "text-white");
-                }, 2000);
-            });
-        }
-
-        async function fetchUserDeposits(userId) {
-            let container = document.getElementById('userDepositsList');
-            try {
-                let res = await fetch(`${API_URL}/get-user-deposits`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId })
-                });
-                let data = await res.json();
-
-                if (res.ok && data.deposits.length > 0) {
-                    container.innerHTML = data.deposits.map(d => `
-                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
-                            <div class="space-y-1">
-                                <span class="text-slate-400">Deposit ID: <strong class="text-white">#${d.order_id}</strong></span>
-                                <p class="text-emerald-400 font-bold text-sm">Amount: $${d.amount}</p>
-                                <p class="text-slate-400 font-mono">TXID: ${d.txid}</p>
-                            </div>
-                            <div>
-                                <span class="px-3 py-1 rounded-full text-xs font-bold ${d.payment_status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
-                                    ${d.payment_status.toUpperCase()}
-                                </span>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No deposit requests found yet.</p>`;
-                }
-            } catch (err) {
-                container.innerHTML = `<p class="text-xs text-red-500 text-center py-6">Error loading deposits.</p>`;
-            }
-        }
-
-        checkAuth();
+        initProductPage();
     </script>
 </body>
 </html>
