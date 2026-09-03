@@ -176,6 +176,10 @@
             <h3 id="modalTitle" class="font-bold text-white text-lg">Notification</h3>
             <p id="modalMessage" class="text-xs text-slate-300 leading-relaxed"></p>
             
+            <div id="modalInputContainer" class="hidden">
+                <input type="number" step="0.01" id="modalPromptInput" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 text-center font-bold" placeholder="Enter amount...">
+            </div>
+
             <div id="modalSingleBtnContainer">
                 <button id="modalOkBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20">
                     OK
@@ -186,7 +190,7 @@
                 <button id="modalCancelBtn" onclick="closeCustomModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs transition">
                     Cancel
                 </button>
-                <button id="modalConfirmBtn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-600/20">
+                <button id="modalConfirmBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-600/20">
                     Confirm
                 </button>
             </div>
@@ -197,13 +201,15 @@
         const API_URL = "https://digizone-kb46.onrender.com";
         let currentAdminSecret = sessionStorage.getItem("digizone_admin_secret") || "";
 
-        function showModal(message, type = 'success', onConfirm = null) {
+        function showModal(message, type = 'success', onConfirm = null, showInput = false, defaultValue = '') {
             let modal = document.getElementById('customModal');
             let titleEl = document.getElementById('modalTitle');
             let msgEl = document.getElementById('modalMessage');
             let iconEl = document.getElementById('modalIcon');
             let singleBtnContainer = document.getElementById('modalSingleBtnContainer');
             let confirmBtnsContainer = document.getElementById('modalConfirmBtnsContainer');
+            let inputContainer = document.getElementById('modalInputContainer');
+            let promptInput = document.getElementById('modalPromptInput');
             let okBtn = document.getElementById('modalOkBtn');
 
             msgEl.innerText = message;
@@ -212,23 +218,36 @@
                 titleEl.innerText = "Success";
                 iconEl.className = "w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
                 iconEl.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
-            } else if (type === 'confirm') {
-                titleEl.innerText = "Are you sure?";
-                iconEl.className = "w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
-                iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+            } else if (type === 'confirm' || type === 'prompt') {
+                titleEl.innerText = "Confirmation";
+                iconEl.className = "w-12 h-12 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
+                iconEl.innerHTML = `<i class="fa-solid fa-pen-to-square"></i>`;
             } else {
                 titleEl.innerText = "Notice / Error";
                 iconEl.className = "w-12 h-12 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center mx-auto text-xl";
                 iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
             }
 
+            if (showInput) {
+                inputContainer.classList.remove('hidden');
+                promptInput.value = defaultValue;
+                setTimeout(() => promptInput.focus(), 100);
+            } else {
+                inputContainer.classList.add('hidden');
+            }
+
             if (onConfirm) {
                 singleBtnContainer.classList.add('hidden');
                 confirmBtnsContainer.classList.remove('hidden');
                 let confirmBtn = document.getElementById('modalConfirmBtn');
+                confirmBtn.className = showInput 
+                    ? "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/20"
+                    : "w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-600/20";
+
                 confirmBtn.onclick = () => {
+                    let val = promptInput.value;
                     closeCustomModal();
-                    onConfirm();
+                    onConfirm(val);
                 };
             } else {
                 singleBtnContainer.classList.remove('hidden');
@@ -420,29 +439,30 @@
         }
 
         function editBalance(userId, userName, currentBalance) {
-            let newAmountStr = prompt(`Enter new balance for "${userName}" (Current: $${currentBalance}):`, currentBalance);
-            if (newAmountStr === null) return;
-            let newAmount = parseFloat(newAmountStr);
-            if (isNaN(newAmount) || newAmount < 0) {
-                showModal("Please enter a valid balance amount!", "error");
-                return;
-            }
-
-            fetch(`${API_URL}/update-user-balance`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, new_balance: newAmount, admin_secret: currentAdminSecret })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
-                    showModal(data.message, "success");
-                    loadUsers();
-                } else {
-                    showModal(data.detail || "Failed to update balance", "error");
+            showModal(`Enter new balance for "${userName}":`, 'prompt', (newAmountStr) => {
+                if (newAmountStr === null || newAmountStr === "") return;
+                let newAmount = parseFloat(newAmountStr);
+                if (isNaN(newAmount) || newAmount < 0) {
+                    showModal("Please enter a valid balance amount!", "error");
+                    return;
                 }
-            })
-            .catch(() => showModal("Server connection error", "error"));
+
+                fetch(`${API_URL}/update-user-balance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, new_balance: newAmount, admin_secret: currentAdminSecret })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        showModal(data.message, "success");
+                        loadUsers();
+                    } else {
+                        showModal(data.detail || "Failed to update balance", "error");
+                    }
+                })
+                .catch(() => showModal("Server connection error", "error"));
+            }, true, currentBalance);
         }
 
         function toggleBlockUser(userId, userName) {
