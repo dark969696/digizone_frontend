@@ -201,10 +201,6 @@
             let badge = document.getElementById('homeStockBadge');
             let btn = document.getElementById('homeBuyBtn');
 
-            let cachedStock = localStorage.getItem("digizone_cached_stock");
-            let cachedStockTime = localStorage.getItem("digizone_stock_time");
-            let now = new Date().getTime();
-
             function updateStockUI(stock) {
                 if (stock > 0) {
                     badge.innerText = `In Stock (${stock})`;
@@ -221,11 +217,6 @@
                 }
             }
 
-            if (cachedStock !== null && cachedStockTime && (now - cachedStockTime < CACHE_DURATION)) {
-                updateStockUI(parseInt(cachedStock));
-                return;
-            }
-
             try {
                 let res = await fetch(`${API_URL}/check-stock/1`);
                 let data = await res.json();
@@ -233,19 +224,13 @@
                 if (res.ok) {
                     let stock = data.available_stock;
                     updateStockUI(stock);
-                    localStorage.setItem("digizone_cached_stock", stock);
-                    localStorage.setItem("digizone_stock_time", now);
                 } else {
                     badge.innerText = "Status Unknown";
                     badge.className = "text-xs bg-amber-500/10 text-amber-400 font-semibold px-2.5 py-1 rounded-md";
                 }
             } catch (err) {
-                if (cachedStock !== null) {
-                    updateStockUI(parseInt(cachedStock));
-                } else {
-                    badge.innerText = "Status Unknown";
-                    badge.className = "text-xs bg-amber-500/10 text-amber-400 font-semibold px-2.5 py-1 rounded-md";
-                }
+                badge.innerText = "Status Unknown";
+                badge.className = "text-xs bg-amber-500/10 text-amber-400 font-semibold px-2.5 py-1 rounded-md";
             }
         }
 
