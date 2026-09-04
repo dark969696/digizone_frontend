@@ -167,33 +167,16 @@
         }
 
         async function loadProductPrice() {
-            let cachedPrice = localStorage.getItem("digizone_cached_price");
-            let cachedTime = localStorage.getItem("digizone_price_time");
-            let now = new Date().getTime();
-
-            if (cachedPrice && cachedTime && (now - cachedTime < CACHE_DURATION)) {
-                document.getElementById('productPrice').innerText = `$${parseFloat(cachedPrice).toFixed(2)}`;
-                return;
-            }
-
             try {
                 let res = await fetch(`${API_URL}/get-product-price/1`);
                 let data = await res.json();
-                if (res.ok) {
-                    let price = data.price;
-                    document.getElementById('productPrice').innerText = `$${price.toFixed(2)}`;
-                    localStorage.setItem("digizone_cached_price", price);
-                    localStorage.setItem("digizone_price_time", now);
+                if (res.ok && data.price !== undefined) {
+                    document.getElementById('productPrice').innerText = `$${parseFloat(data.price).toFixed(2)}`;
                 } else {
-                    document.getElementById('productPrice').innerText = `$2.50`;
+                    document.getElementById('productPrice').innerText = `$0.50`;
                 }
             } catch (err) {
                 console.error("Failed to fetch price", err);
-                if (cachedPrice) {
-                    document.getElementById('productPrice').innerText = `$${parseFloat(cachedPrice).toFixed(2)}`;
-                } else {
-                    document.getElementById('productPrice').innerText = `$2.50`;
-                }
             }
         }
 
